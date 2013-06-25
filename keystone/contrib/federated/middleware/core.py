@@ -109,7 +109,8 @@ class FederatedAuthentication(wsgi.Middleware):
         if not 'HTTP_X_AUTHENTICATION_TYPE' in request.environ:
             return 
         if not request.environ['HTTP_X_AUTHENTICATION_TYPE'] in  ('federated'):
-            return 
+            return
+        LOG.debug('HTTP_X_AUTHENTICATION_TYPE') 
         body = request.body 
         data = jsonutils.loads(body)
        
@@ -141,6 +142,7 @@ class FederatedAuthentication(wsgi.Middleware):
             
             return directory.getProviderList()
 
+
     def getRequest(self, realm):
         ''' Get an authentication request to return to the client '''
         catalog_api = catalog.controllers.ServiceV3()
@@ -152,10 +154,10 @@ class FederatedAuthentication(wsgi.Middleware):
         context['query_string'] = {}
         context['path'] = ""
         context['query_string']['service_id'] = service['id']
-        endpoints = endpoint_api.list_endpoints(context)['endpoints']
+        endpoints = endpoint_api.list_endpoints(context)
         endpoint = None
-        if not len(endpoints) < 1:
-            for e in endpoints:
+        if not len(endpoints['endpoints']) < 1:
+            for e in endpoints['endpoints']:
                 if e['interface'] == 'public':
                     endpoint = e['url']
         else:
@@ -171,7 +173,7 @@ class FederatedAuthentication(wsgi.Middleware):
         type = service["type"].split('.')[1]
         processing_module = load_protocol_module(type)
         cred_validator = processing_module.CredentialValidator()
-        return cred_validator.validate(data['idpResponse'], service['id'])
+        return cred_validator.validate(data, service['id'])
 
     def negotiate(self, data):
         ''' Process a negotiation between an Idp and client '''
@@ -296,7 +298,10 @@ class FederatedAuthentication(wsgi.Middleware):
 def load_protocol_module(protocol):
     ''' Dynamically load correct module for processing authentication
         according to identity provider's protocol'''
-    return imp.load_source(protocol, os.path.dirname(__file__)+'/'+protocol+".py")
+    try:
+        return imp.load_source(protocol, os.path.dirname(__file__)+'/'+protocol+".py")
+    except Exception as e:
+        LOG.error(e)
         
 
 '''def filter_factory(global_conf, **local_conf):

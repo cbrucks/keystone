@@ -1,0 +1,20 @@
+MUSER="$1"
+MPASS="$2"
+MDB="$3"
+MHOST="localhost"
+
+tables_2_clear="attribute_mapping os_attribute_association org_attribute_idp_membership org_attribute_association org_attribute org_attribute_set os_attribute_set"
+
+MYSQL=$(which mysql)
+
+for t in $tables_2_clear
+do
+    $MYSQL -u $MUSER -p$MPASS -h $MHOST $MDB -e "delete from $t;"
+done
+
+
+$MYSQL -u $MUSER -p$MPASS -h $MHOST $MDB -e "delete from user_project_metadata where project_id in (select id from project where name='example_mapping_project');"
+$MYSQL -u $MUSER -p$MPASS -h $MHOST $MDB -e "delete from project where name='example_mapping_project';"
+$MYSQL -u $MUSER -p$MPASS -h $MHOST $MDB -e "delete from role where name='example_mapping_role';"
+$MYSQL -u $MUSER -p$MPASS -h $MHOST $MDB -e "delete from endpoint where url='https://identity.api.rackspacecloud.com/v2.0';"
+$MYSQL -u $MUSER -p$MPASS -h $MHOST $MDB -e "delete from service where type='idp.rax';"
